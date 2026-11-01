@@ -1,0 +1,1372 @@
+/* ==========================================================================
+   NOCTIS — BRAND DESIGN SYSTEM & STYLESHEET
+   Pure Vanilla CSS · Zero Gradients · Zero Glassmorphism · Zero Shadows
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. DESIGN TOKENS
+   -------------------------------------------------------------------------- */
+:root {
+  /* Color Palette */
+  --asphalt: #07080A;      /* Pure dark page background */
+  --graphite: #121418;     /* Secondary structural tone */
+  --fog: #8A8F98;          /* Muted metadata and inactive elements */
+  --bone: #EDEAE4;         /* High-contrast primary text */
+  --xenon: #CFE3FF;        /* Cold electric signature light */
+  --taillight: #E1251B;    /* Precise racing red accent */
+  --hairline: rgba(237, 234, 228, 0.12); /* 1px structural dividing lines */
+
+  /* Typography */
+  --font-display: 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-hud: 'JetBrains Mono', monospace;
+
+  /* Motion Timing & Physics */
+  --ease-noctis: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-reveal: 0.9s;
+  --duration-transition: 0.7s;
+}
+
+/* --------------------------------------------------------------------------
+   2. RESET & BASE ARCHITECTURE
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: var(--asphalt);
+  color: var(--bone);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip; /* Cleanly clip horizontal overflows without breaking sticky */
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--asphalt);
+  color: var(--bone);
+  min-height: 100vh;
+  overflow-x: clip;
+  position: relative;
+}
+
+body.loading {
+  overflow: hidden;
+}
+
+/* Hide native cursor strictly when fine pointer is active */
+@media (pointer: fine) {
+  body {
+    cursor: none;
+  }
+  a, button, [role="button"], input, select, textarea {
+    cursor: none !important;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Accessibility Focus States: 1px Xenon Light Bar Outline */
+:focus-visible {
+  outline: 1px solid var(--xenon);
+  outline-offset: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   3. FILM GRAIN OVERLAY
+   Fixed offscreen noise tile, shifted 8 times/sec, 3.5% opacity, no pointer events
+   -------------------------------------------------------------------------- */
+.film-grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9990;
+  opacity: 0.035;
+}
+
+/* --------------------------------------------------------------------------
+   4. CUSTOM CURSOR ("THE HEADLIGHT")
+   -------------------------------------------------------------------------- */
+.cursor-headlight {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  display: none; /* Shown on fine pointer devices */
+  will-change: transform;
+}
+
+@media (pointer: fine) {
+  .cursor-headlight {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Default state: 6px solid xenon dot inside 28px ring with 1px xenon stroke */
+.cursor-ring {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--xenon);
+  border-radius: 50%;
+  position: absolute;
+  transition: opacity 0.25s var(--ease-noctis), transform 0.25s var(--ease-noctis);
+}
+
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--xenon);
+  border-radius: 50%;
+  position: absolute;
+  transition: opacity 0.25s var(--ease-noctis), transform 0.25s var(--ease-noctis);
+}
+
+/* Interactive hover state: 44x2px horizontal xenon light bar */
+.cursor-bar {
+  width: 44px;
+  height: 2px;
+  background-color: var(--xenon);
+  position: absolute;
+  opacity: 0;
+  transform: scaleX(0.2);
+  transition: opacity 0.2s var(--ease-noctis), transform 0.25s var(--ease-noctis), background-color 0.12s ease;
+}
+
+.cursor-label {
+  position: absolute;
+  left: 32px;
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--xenon);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s var(--ease-noctis), transform 0.25s var(--ease-noctis);
+}
+
+/* Hovering active targets */
+.cursor-headlight.is-hovering .cursor-ring,
+.cursor-headlight.is-hovering .cursor-dot {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.cursor-headlight.is-hovering .cursor-bar {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.cursor-headlight.is-hovering .cursor-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Mousedown pulse: turns brighter for 120ms */
+.cursor-headlight.is-down .cursor-bar {
+  background-color: #FFFFFF;
+}
+.cursor-headlight.is-down .cursor-dot {
+  background-color: #FFFFFF;
+}
+
+/* --------------------------------------------------------------------------
+   5. PRELOADER
+   -------------------------------------------------------------------------- */
+.preloader {
+  position: fixed;
+  inset: 0;
+  background-color: var(--asphalt);
+  z-index: 9995;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s var(--ease-noctis), visibility 0.8s var(--ease-noctis);
+}
+
+.preloader.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.preloader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.preloader-wordmark {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+.preloader-line-container {
+  width: 240px;
+  height: 1px;
+  background-color: var(--hairline);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preloader-line {
+  height: 1px;
+  width: 0%;
+  background-color: var(--xenon);
+  transition: width 0.15s ease-out, background-color 0.2s ease;
+}
+
+.preloader-line.brighten {
+  background-color: #FFFFFF;
+  height: 2px;
+}
+
+.preloader-counter {
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--fog);
+}
+
+/* --------------------------------------------------------------------------
+   6. SITE NAVIGATION
+   Fixed, transparent, mix-blend-mode: difference. Hides down, shows up.
+   -------------------------------------------------------------------------- */
+.site-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 72px;
+  z-index: 9000;
+  mix-blend-mode: difference;
+  transition: transform 0.4s var(--ease-noctis);
+}
+
+.site-nav.nav-hidden {
+  transform: translateY(-100%);
+}
+
+.site-nav.nav-visible {
+  transform: translateY(0);
+}
+
+.nav-container {
+  max-width: 1600px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-wordmark {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 400;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.12em;
+  color: #FFFFFF;
+  text-transform: uppercase;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.nav-link {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  transition: opacity 0.2s ease;
+  position: relative;
+}
+
+.nav-link:hover {
+  opacity: 0.7;
+}
+
+.nav-link-reserve {
+  padding-left: 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   7. PINNED SCROLLYTELLING ARCHITECTURE (HERO & DISMANTLE)
+   -------------------------------------------------------------------------- */
+.scrolly-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.scrolly-stage {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background-color: var(--asphalt);
+}
+
+.scrolly-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 1px Xenon Bottom Section Progress Line */
+.section-progress-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--hairline);
+  z-index: 100;
+}
+
+.section-progress-line {
+  height: 1px;
+  width: 0%;
+  background-color: var(--xenon);
+}
+
+/* --------------------------------------------------------------------------
+   8. HERO SPECIFIC ELEMENTS
+   -------------------------------------------------------------------------- */
+.hero-wrapper {
+  height: 600vh; /* Controlled via config */
+}
+
+/* Left HUD */
+.hero-hud {
+  position: absolute;
+  top: 50%;
+  left: 40px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  z-index: 80;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--bone);
+}
+
+.hud-chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Taillight-red active tick */
+.hud-tick {
+  width: 4px;
+  height: 12px;
+  background-color: var(--taillight);
+  display: inline-block;
+}
+
+.hud-label {
+  color: var(--fog);
+}
+
+.hud-value {
+  color: var(--bone);
+  font-weight: 500;
+  min-width: 26px;
+}
+
+.hud-unit {
+  color: var(--fog);
+  font-size: 10px;
+}
+
+/* Hero Narrative Chapters (Positioned in Sky Space) */
+.hero-narrative-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.hero-chapter {
+  position: absolute;
+  top: 10%;
+  left: 120px;
+  right: 80px;
+  max-width: 1100px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s var(--ease-noctis), visibility 0.5s var(--ease-noctis);
+  pointer-events: none;
+}
+
+.hero-chapter.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Line reveal masking helper */
+.line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+.line-inner {
+  display: block;
+  transform: translateY(105%);
+  transition: transform var(--duration-reveal) var(--ease-noctis);
+}
+
+.hero-chapter.active .line-inner {
+  transform: translateY(0%);
+}
+
+.hero-chapter.active .line-mask:nth-child(1) .line-inner {
+  transition-delay: 0s;
+}
+.hero-chapter.active .line-mask:nth-child(2) .line-inner {
+  transition-delay: 0.08s;
+}
+.hero-chapter.active .line-mask:nth-child(3) .line-inner {
+  transition-delay: 0.16s;
+}
+
+/* Chapter 1: Brand intro */
+.hero-brand {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 9vw, 130px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bone);
+  line-height: 0.95;
+}
+
+.hero-tagline {
+  margin-top: 16px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--fog);
+  letter-spacing: 0.02em;
+}
+
+.hero-scroll-hint {
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.scroll-hint-label {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--fog);
+}
+
+.scroll-hint-bar {
+  width: 48px;
+  height: 1px;
+  background-color: var(--xenon);
+  animation: pulseXenon 2.2s infinite ease-in-out;
+}
+
+@keyframes pulseXenon {
+  0%, 100% { opacity: 0.3; transform: scaleX(0.7); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+/* Chapters 2 & 3: Atmospheric Statements */
+.hero-statement {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5.5vw, 84px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  line-height: 1.05;
+  max-width: 900px;
+}
+
+/* Chapter 4: Model Intro */
+.hero-reveal-label {
+  display: block;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--xenon);
+  margin-bottom: 12px;
+}
+
+.hero-model-title {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8vw, 110px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  line-height: 1;
+}
+
+.hero-specs-row {
+  margin-top: 16px;
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--fog);
+}
+
+.hero-link-wrap {
+  margin-top: 28px;
+}
+
+.hero-cta-link {
+  display: inline-block;
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--xenon);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--xenon);
+  padding-bottom: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.hero-cta-link:hover {
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   9. SECTION 2: STATEMENT (Not pinned, 100vh)
+   Word-by-word reveal with scroll
+   -------------------------------------------------------------------------- */
+.statement-section {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px;
+  background-color: var(--asphalt);
+  position: relative;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.statement-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+}
+
+.statement-hud-label {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--fog);
+}
+
+.statement-sentence {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5.5vw, 84px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  color: var(--bone);
+  quotes: none;
+}
+
+/* Individual words for scroll opacity reveal */
+.statement-word {
+  display: inline-block;
+  opacity: 0.15;
+  transition: opacity 0.2s var(--ease-noctis);
+}
+
+/* --------------------------------------------------------------------------
+   10. SECTION 3: DISMANTLE SCROLLYTELLING (Pinned ~350vh)
+   Exploded view with 4 callouts
+   -------------------------------------------------------------------------- */
+.dismantle-wrapper {
+  height: 350vh; /* Configurable in config.js */
+}
+
+.dismantle-header {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  z-index: 80;
+}
+
+.dismantle-prelabel {
+  display: block;
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--fog);
+  margin-bottom: 8px;
+}
+
+.dismantle-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 54px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+/* Dismantle Interactive Callouts */
+.dismantle-callouts-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90;
+}
+
+.dismantle-callout {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-noctis), transform 0.5s var(--ease-noctis);
+  transform: translateY(6px);
+}
+
+.dismantle-callout.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Small 6px Xenon dot */
+.callout-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: var(--xenon);
+  transform: translate(-50%, -50%);
+}
+
+/* Hairline vector connecting dot to label */
+.callout-line {
+  position: absolute;
+  height: 1px;
+  background-color: var(--hairline);
+  transform-origin: left center;
+}
+
+/* Callout text block */
+.callout-content {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.callout-title {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--xenon);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.callout-desc {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--bone);
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   11. SECTION 4: THE LINEUP (Accordion, 100vh)
+   -------------------------------------------------------------------------- */
+.lineup-section {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--asphalt);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.lineup-intro {
+  padding: 40px 40px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+}
+
+.lineup-kicker {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--fog);
+}
+
+.lineup-heading {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+/* Accordion Container */
+.lineup-accordion {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  min-height: 520px;
+}
+
+/* Slide Base (Buttons with aria-expanded) */
+.lineup-slide {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background-color: var(--asphalt);
+  border-right: 1px solid var(--hairline);
+  overflow: hidden;
+  padding: 24px;
+  text-align: left;
+  transition: flex-grow var(--duration-transition) var(--ease-noctis);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  will-change: flex-grow;
+}
+
+.lineup-slide:last-child {
+  border-right: none;
+}
+
+/* Entrance stagger animation */
+.lineup-slide {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s var(--ease-noctis), transform 0.8s var(--ease-noctis), flex-grow var(--duration-transition) var(--ease-noctis);
+}
+
+.lineup-section.in-view .lineup-slide {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lineup-section.in-view .lineup-slide:nth-child(1) { transition-delay: 0.00s; }
+.lineup-section.in-view .lineup-slide:nth-child(2) { transition-delay: 0.08s; }
+.lineup-section.in-view .lineup-slide:nth-child(3) { transition-delay: 0.16s; }
+.lineup-section.in-view .lineup-slide:nth-child(4) { transition-delay: 0.24s; }
+.lineup-section.in-view .lineup-slide:nth-child(5) { transition-delay: 0.32s; }
+
+/* Closed Slide State (~12vw width) */
+.lineup-slide:not(.is-open) {
+  flex-grow: 1;
+}
+
+.lineup-slide.is-open {
+  flex-grow: 4.5; /* Takes remaining ~52vw */
+}
+
+/* Closed slide elements */
+.slide-closed-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  z-index: 5;
+}
+
+.slide-num {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--fog);
+}
+
+.slide-vertical-name {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-hud);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--bone);
+  text-transform: uppercase;
+  margin-top: 24px;
+}
+
+/* Car Image container */
+.slide-car-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Shared floor line at 72% height */
+.slide-floor-line {
+  position: absolute;
+  top: 72%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: var(--hairline);
+  opacity: 0.5;
+}
+
+.slide-car-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center 72%;
+  transition: transform var(--duration-transition) var(--ease-noctis), filter var(--duration-transition) var(--ease-noctis), opacity var(--duration-transition) var(--ease-noctis);
+}
+
+/* When slide is closed: 25% brightness & greyscale, cropped on front light bar */
+.lineup-slide:not(.is-open) .slide-car-img {
+  filter: grayscale(100%) brightness(25%);
+  object-fit: cover;
+  object-position: right 65%;
+  transform: scale(1.1);
+}
+
+/* When slide is open: full brightness and colour, slides in 6% from left */
+.lineup-slide.is-open .slide-car-img {
+  filter: grayscale(0%) brightness(100%);
+  object-fit: contain;
+  object-position: center 72%;
+  animation: slideCarIn var(--duration-transition) var(--ease-noctis) forwards;
+}
+
+@keyframes slideCarIn {
+  from {
+    transform: translateX(-6%);
+    opacity: 0.7;
+  }
+  to {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+}
+
+/* Open Slide Content Overlay */
+.slide-open-content {
+  position: relative;
+  z-index: 10;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s var(--ease-noctis);
+}
+
+.lineup-slide.is-open .slide-open-content {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.slide-model-title {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  line-height: 1;
+}
+
+/* Bottom details (under car) */
+.slide-bottom-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 600px;
+}
+
+.slide-tagline {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--bone);
+}
+
+/* 3-Column Spec Row */
+.slide-spec-row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 12px;
+}
+
+.spec-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-label {
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--fog);
+}
+
+.spec-value {
+  font-family: var(--font-hud);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--bone);
+  font-weight: 500;
+}
+
+/* Swatches & CTA Row */
+.slide-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.slide-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.color-swatch.active {
+  border: 1px solid var(--bone);
+  transform: scale(1.15);
+}
+
+.slide-cta-link {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--xenon);
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--xenon);
+  padding-bottom: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.slide-cta-link:hover {
+  opacity: 0.75;
+}
+
+/* --------------------------------------------------------------------------
+   12. SECTION 5: RESERVE (100vh)
+   -------------------------------------------------------------------------- */
+.reserve-section {
+  min-height: 100vh;
+  width: 100%;
+  background-color: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  position: relative;
+  text-align: center;
+}
+
+.reserve-inner {
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.reserve-kicker {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--fog);
+}
+
+.reserve-title {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 7vw, 96px);
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  line-height: 1;
+}
+
+.reserve-body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--fog);
+  max-width: 52ch;
+  line-height: 1.6;
+}
+
+.reserve-action {
+  margin-top: 16px;
+}
+
+/* Reserve Button: Thin Xenon Outline, On Hover fills with solid Xenon, text turns #07080A, red tick appears */
+.reserve-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  padding: 0 36px;
+  border: 1px solid var(--xenon);
+  background-color: transparent;
+  color: var(--xenon);
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  position: relative;
+  transition: background-color 0.25s var(--ease-noctis), color 0.25s var(--ease-noctis), border-color 0.25s var(--ease-noctis);
+}
+
+.reserve-btn-tick {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--taillight);
+  opacity: 0;
+  transform: scaleY(0.4);
+  transition: opacity 0.2s var(--ease-noctis), transform 0.2s var(--ease-noctis);
+}
+
+.reserve-btn:hover {
+  background-color: var(--xenon);
+  color: var(--asphalt);
+  border-color: var(--xenon);
+}
+
+.reserve-btn:hover .reserve-btn-tick {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+/* --------------------------------------------------------------------------
+   13. FOOTER
+   -------------------------------------------------------------------------- */
+.site-footer {
+  width: 100%;
+  background-color: var(--asphalt);
+  border-top: 1px solid var(--hairline);
+  padding: 60px 40px 40px 40px;
+}
+
+.footer-container {
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 48px;
+}
+
+.footer-wordmark {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 300;
+  font-stretch: 125%;
+  font-variation-settings: 'wdth' 125;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+.footer-columns {
+  display: flex;
+  gap: 80px;
+  flex-wrap: wrap;
+}
+
+.footer-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-col-header {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--bone);
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-link, .footer-link-btn, .footer-plain-text {
+  font-family: var(--font-hud);
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--fog);
+  transition: color 0.2s ease;
+  text-align: left;
+}
+
+.footer-link:hover, .footer-link-btn:hover {
+  color: var(--bone);
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+  padding-top: 24px;
+  font-family: var(--font-hud);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--fog);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   14. MOBILE & RESPONSIVE BEHAVIOR (< 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 0 20px;
+  }
+  .nav-menu {
+    gap: 18px;
+  }
+  
+  .hero-hud {
+    left: 20px;
+    top: auto;
+    bottom: 24px;
+    transform: none;
+    flex-direction: row;
+    gap: 18px;
+  }
+
+  .hero-chapter {
+    left: 20px;
+    right: 20px;
+    top: 15%;
+  }
+
+  .statement-section {
+    padding: 60px 20px;
+  }
+
+  .dismantle-header {
+    top: 24px;
+    left: 20px;
+  }
+
+  /* Accordion mobile: stack vertically as 72px rows */
+  .lineup-intro {
+    padding: 30px 20px 10px 20px;
+  }
+
+  .lineup-accordion {
+    flex-direction: column;
+    height: auto;
+    min-height: unset;
+  }
+
+  .lineup-slide {
+    height: 72px;
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+    padding: 16px 20px;
+    transition: height var(--duration-transition) var(--ease-noctis);
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .lineup-slide.is-open {
+    height: 480px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .slide-closed-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .slide-vertical-name {
+    writing-mode: horizontal-tb;
+    transform: none;
+    margin-top: 0;
+  }
+
+  .lineup-slide.is-open .slide-closed-header {
+    display: none;
+  }
+
+  .footer-columns {
+    gap: 40px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   15. ACCESSIBILITY: PREFERS-REDUCED-MOTION
+   No pinning, show static frames with simple fades, normal cursor
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .cursor-headlight {
+    display: none !important;
+  }
+
+  body {
+    cursor: auto !important;
+  }
+
+  a, button, [role="button"] {
+    cursor: pointer !important;
+  }
+
+  .scrolly-wrapper {
+    height: auto !important;
+  }
+
+  .scrolly-stage {
+    position: relative !important;
+    height: 100vh !important;
+  }
+
+  .lineup-slide {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .line-inner {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
