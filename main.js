@@ -86,18 +86,27 @@
   function loadSingleFrame(url) {
     return new Promise((resolve) => {
       const img = new Image();
+      let finished = false;
+      const done = (result) => {
+        if (!finished) {
+          finished = true;
+          resolve(result);
+        }
+      };
+
+      img.onload = () => {
+        if (typeof img.decode === 'function') {
+          img.decode().then(() => done(img)).catch(() => done(img));
+        } else {
+          done(img);
+        }
+      };
+      img.onerror = () => done(null);
+
+      // 2.5s safety timeout per individual frame
+      setTimeout(() => done(null), 2500);
+
       img.src = url;
-      if (img.decode) {
-        img.decode()
-          .then(() => resolve(img))
-          .catch(() => {
-            img.onload = () => resolve(img);
-            img.onerror = () => resolve(null);
-          });
-      } else {
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-      }
     });
   }
 
@@ -121,10 +130,18 @@
       initialPromises.push(p);
     }
 
-    await Promise.all(initialPromises);
+    // Race against a 3.5s timeout so preloader never hangs under any circumstances
+    const safetyTimeout = new Promise((resolve) => setTimeout(resolve, 3500));
+    await Promise.race([Promise.all(initialPromises), safetyTimeout]);
 
     // Initial batch loaded: brighten line and fade out preloader
-    if (preloaderBar) preloaderBar.classList.add('brighten');
+    if (preloaderBar) {
+      preloaderBar.style.width = '100%';
+      preloaderBar.classList.add('brighten');
+    }
+    if (preloaderCounter) {
+      preloaderCounter.textContent = '100';
+    }
 
     setTimeout(() => {
       document.body.classList.remove('loading');
